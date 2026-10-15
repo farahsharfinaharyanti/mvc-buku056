@@ -25,6 +25,40 @@ class BukuController
         require __DIR__ . '/../views/buku/create.php';
     }
 
+    // Validasi data buku
+    private function validasiData($data)
+    {
+        if (
+            in_array('', $data, true) ||
+            mb_strlen($data['judul']) > 150 ||
+            mb_strlen($data['penulis']) > 100 ||
+            mb_strlen($data['penerbit']) > 100 ||
+            !ctype_digit($data['tahun_terbit']) ||
+            (int) $data['tahun_terbit'] < 1 ||
+            (int) $data['tahun_terbit'] > (int) date('Y') ||
+            !is_numeric($data['harga']) ||
+            !is_finite((float) $data['harga']) ||
+            (float) $data['harga'] < 0 ||
+            (float) $data['harga'] > 9999999999.99
+        ) {
+            return false;
+        }
+
+        return true;
+    }
+
+    // Mengambil data dari form
+    private function ambilDataForm()
+    {
+        return [
+            'judul' => trim($_POST['judul'] ?? ''),
+            'penulis' => trim($_POST['penulis'] ?? ''),
+            'penerbit' => trim($_POST['penerbit'] ?? ''),
+            'tahun_terbit' => trim($_POST['tahun_terbit'] ?? ''),
+            'harga' => trim($_POST['harga'] ?? '')
+        ];
+    }
+
     // Menyimpan buku baru
     public function store()
     {
@@ -33,22 +67,9 @@ class BukuController
             exit;
         }
 
-        $data = [
-            'judul' => trim($_POST['judul'] ?? ''),
-            'penulis' => trim($_POST['penulis'] ?? ''),
-            'penerbit' => trim($_POST['penerbit'] ?? ''),
-            'tahun_terbit' => trim($_POST['tahun_terbit'] ?? ''),
-            'harga' => trim($_POST['harga'] ?? '')
-        ];
+        $data = $this->ambilDataForm();
 
-        if (
-            in_array('', $data, true) ||
-            !ctype_digit($data['tahun_terbit']) ||
-            (int) $data['tahun_terbit'] < 1 ||
-            (int) $data['tahun_terbit'] > (int) date('Y') ||
-            !is_numeric($data['harga']) ||
-            (float) $data['harga'] < 0
-        ) {
+        if (!$this->validasiData($data)) {
             header('Location: index.php?action=create&error=1');
             exit;
         }
@@ -94,22 +115,9 @@ class BukuController
             exit;
         }
 
-        $data = [
-            'judul' => trim($_POST['judul'] ?? ''),
-            'penulis' => trim($_POST['penulis'] ?? ''),
-            'penerbit' => trim($_POST['penerbit'] ?? ''),
-            'tahun_terbit' => trim($_POST['tahun_terbit'] ?? ''),
-            'harga' => trim($_POST['harga'] ?? '')
-        ];
+        $data = $this->ambilDataForm();
 
-        if (
-            in_array('', $data, true) ||
-            !ctype_digit($data['tahun_terbit']) ||
-            (int) $data['tahun_terbit'] < 1 ||
-            (int) $data['tahun_terbit'] > (int) date('Y') ||
-            !is_numeric($data['harga']) ||
-            (float) $data['harga'] < 0
-        ) {
+        if (!$this->validasiData($data)) {
             header('Location: index.php?action=edit&id=' . $id . '&error=1');
             exit;
         }
@@ -130,11 +138,13 @@ class BukuController
 
         $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
 
-        if ($id && $id > 0) {
+        if ($id && $id > 0 && $this->buku->getById($id)) {
             $this->buku->delete($id);
+            header('Location: index.php?success=delete');
+            exit;
         }
 
-        header('Location: index.php?success=delete');
+        header('Location: index.php');
         exit;
     }
 }
